@@ -1,0 +1,27 @@
+# Build output
+omarchy-vm
+*.o
+.build/
+DerivedData/
+
+# Secrets — the SSH keypair that reaches into the guest. Never commit these.
+vm-key
+vm-key*
+archboot-key
+*.pem
+authorized_keys
+
+# Guest state: disk images are 64 GB sparse files, and the EFI variable store
+# is per-machine. None of it is source.
+vm/
+serve/
+
+# Installer images
+iso/
+*.iso
+
+# Fetched upstream notes (contains archboot's published key; not ours to ship)
+Release.txt
+
+# macOS
+.DS_Store
