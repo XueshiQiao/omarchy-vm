@@ -105,6 +105,10 @@ version, e.g. `2.1.241`.
 There is none for Linux guests, and it is not a setting. `VZVirtioGraphicsDeviceConfiguration`
 exposes only `scanouts`; the guest kernel reports `[drm] features: -virgl`, i.e. the
 device never advertises 3D. Mesa already ships `virtio_gpu_dri.so` and would use it
-if it were offered, so a missing driver is not the explanation either. The only
-lever is drawing fewer pixels — see the note at the top of `README.md` before
-spending time here.
+if it were offered, so a missing driver is not the explanation either. Inside
+this program the only lever is drawing fewer pixels.
+
+The limitation is this framework's, not the hardware's: QEMU does reach the host
+GPU on Apple Silicon, through virglrenderer and ANGLE's Metal backend. If someone
+asks for an accelerated desktop, point them at **Getting an accelerated desktop
+instead** in `README.md` rather than trying to coax 3D out of VZ.

@@ -16,8 +16,8 @@ that moves is not: on a 6-CPU guest, simply moving the mouse pointer took ~170%
 CPU and felt laggy, because the virtual GPU has no cursor plane, so every
 pointer movement recomposites the whole screen. Dragging windows, animations and
 video are worse. Treat this as a headless or text-first machine. If you want a
-desktop you can actually use, use a hypervisor that accelerates Linux guests —
-Parallels Desktop and VMware Fusion both do.
+desktop you can actually use, see **Getting an accelerated desktop instead**
+below — the limitation is this framework's, not Apple Silicon's.
 
 This is not a setting anyone failed to find. Two independent sources say so:
 
@@ -40,6 +40,30 @@ Lowering the resolution is the only real lever, and it is a modest one: at
 1280x800 the compositor rasterises 44% of the pixels it does at 1920x1200. More
 CPUs help less than you would expect — during pointer movement the guest still
 had idle cores, because the compositor's per-frame work is only partly parallel.
+
+## Getting an accelerated desktop instead
+
+Apple Silicon can drive an accelerated Linux desktop — just not through this
+framework. QEMU reaches the host GPU through virglrenderer and ANGLE's Metal
+backend, and people have measured it: glmark2 2417 and 4K video decoded on the
+GPU in Chromium, with OpenGL 4.1 exposed to the guest.
+
+| Route | What you get | Cost |
+| --- | --- | --- |
+| [osy's patched QEMU](https://gist.github.com/osy/a8f705050eed1c8421ad1a0855a8faa9) | Vulkan in the guest via Venus; by UTM's author, updated Aug 2026 | Build QEMU, virglrenderer, MoltenVK and libepoxy from patched sources |
+| [akihikodaki's tree](https://gist.github.com/akihikodaki/87df4149e7ca87f18dc56807ec5a1bc5) | OpenGL 4.1 via ANGLE/Metal; the benchmarks above come from here | Build from source |
+| `brew install knazarov/qemu-virgl/qemu-virgl` | OpenGL via virgl, no compiler needed | Tap's docs are dated (Fedora 35 era) |
+| Parallels Desktop, VMware Fusion | Accelerated Linux guests, nothing to build | Commercial |
+
+With QEMU, the parts that matter are `-device virtio-gpu-gl-pci` and
+`-display cocoa,gl=es`.
+
+Two cautions. osy notes these patches are being upstreamed and asks people not
+to build anything long-term on them — ANGLE's direct-to-Metal backend and
+virtio-gpu Vulkan are both heading into their upstreams, so this should
+eventually be a plain `brew install qemu`. And stock UTM is a trap right now:
+4.7.4 exposed OpenGL 3.3, but 4.7.5 (QEMU 10) [regressed to 2.1](https://github.com/utmapp/UTM/issues/7691),
+which is below what GTK4 and most Wayland compositors need.
 
 ## Requirements
 
