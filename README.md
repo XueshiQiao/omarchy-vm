@@ -7,6 +7,40 @@ Silicon and drive it headlessly.
 It is about 300 lines of Swift. There is no configuration file: everything is a
 command-line flag, and all guest state lives in one directory you can copy.
 
+## Read this before you plan a desktop around it
+
+**There is no GPU acceleration for Linux guests here, and it cannot be turned
+on.** Everything the guest draws is rasterised on the CPU. A terminal, an editor
+and a browser reading text are fine — an idle desktop costs ~0% CPU. Anything
+that moves is not: on a 6-CPU guest, simply moving the mouse pointer took ~170%
+CPU and felt laggy, because the virtual GPU has no cursor plane, so every
+pointer movement recomposites the whole screen. Dragging windows, animations and
+video are worse. Treat this as a headless or text-first machine. If you want a
+desktop you can actually use, use a hypervisor that accelerates Linux guests —
+Parallels Desktop and VMware Fusion both do.
+
+This is not a setting anyone failed to find. Two independent sources say so:
+
+- **Host side.** `VZVirtioGraphicsDeviceConfiguration` has exactly one property,
+  `scanouts` — how many displays and how big. There is no acceleration flag, and
+  no way to pass a host GPU through. The class that does offer 3D,
+  `VZMacGraphicsDeviceConfiguration`, only accepts macOS guests.
+- **Guest side.** Linux prints what the device offered it:
+
+  ```
+  [drm] features: -virgl -edid -resource_blob -host_visible
+  ```
+
+  The leading minus means absent, and `virgl` is the 3D feature. The guest is
+  not missing a driver — Mesa ships `virtio_gpu_dri.so` and would use it. The
+  device simply never advertises the capability, so Mesa falls back to
+  `llvmpipe`.
+
+Lowering the resolution is the only real lever, and it is a modest one: at
+1280x800 the compositor rasterises 44% of the pixels it does at 1920x1200. More
+CPUs help less than you would expect — during pointer movement the guest still
+had idle cores, because the compositor's per-frame work is only partly parallel.
+
 ## Requirements
 
 - An Apple Silicon Mac

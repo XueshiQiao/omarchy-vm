@@ -73,3 +73,38 @@ Virtualization.framework has no instruction translation. An x86_64 image cannot
 boot here no matter how it is configured, and Rosetta for Linux does not change
 that — it translates user-space binaries inside an already-ARM64 guest. Before
 planning around an ISO, check that it contains `EFI/BOOT/BOOTAA64.EFI`.
+
+## When screenshots stop working
+
+macOS grants Screen Recording **per executable**, and Claude Code ships a new
+executable on every update, so the grant lapses on a version bump. What you see
+is `could not create image from window` — which reads like a window problem and
+is not one. Run `./check-capture.sh`; it names the entry to switch on.
+
+Do not chase these, they are the same missing grant wearing different clothes:
+
+- `CGWindowListCopyWindowInfo` reporting **empty window titles**
+- the same call reporting **`sharing=0`** for every window
+- failures arriving in **multi-minute all-or-nothing blocks** (a prompt answered
+  "allow once" buys a short working window, which makes it look random)
+
+The one signal worth reading is ScreenCaptureKit's error: **`-3801`**,
+`SCStreamErrorDomain`, "The user declined TCCs for application, window, display
+capture". That is the grant, stated plainly.
+
+A control matters here: capture a second, unrelated window in the *same* sample.
+If both fail together, it is the grant and nothing else. Testing one window at a
+time, or comparing samples taken minutes apart, will send you somewhere else.
+
+Entries named `claude` or `Claude` in that settings pane are different programs;
+switching them on does not help. The entry you need is named after the running
+version, e.g. `2.1.241`.
+
+## Do not go looking for GPU acceleration
+
+There is none for Linux guests, and it is not a setting. `VZVirtioGraphicsDeviceConfiguration`
+exposes only `scanouts`; the guest kernel reports `[drm] features: -virgl`, i.e. the
+device never advertises 3D. Mesa already ships `virtio_gpu_dri.so` and would use it
+if it were offered, so a missing driver is not the explanation either. The only
+lever is drawing fewer pixels — see the note at the top of `README.md` before
+spending time here.
